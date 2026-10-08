@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tic Tac Toe</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+
+/* BACKGROUND */
+body{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(-45deg,#667eea,#764ba2,#ff758c,#43cea2);
+  background-size:400% 400%;
+  animation:bg 10s ease infinite;
+}
+@keyframes bg{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* CARD */
+.card{
+  width:420px;
+  padding:28px;
+  border-radius:24px;
+  background:rgba(255,255,255,.2);
+  backdrop-filter:blur(16px);
+  box-shadow:0 30px 60px rgba(0,0,0,.4);
+  color:white;
+  text-align:center;
+}
+
+/* LOADING */
+#loading{display:flex;flex-direction:column;gap:20px}
+.loading-bar{
+  width:100%;
+  height:8px;
+  background:rgba(255,255,255,.25);
+  border-radius:20px;
+  overflow:hidden;
+}
+.loading-bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#4cc9f0,#4361ee);
+  animation:load 2.5s linear forwards;
+}
+@keyframes load{to{width:100%}}
+
+/* RULES */
+#rules{display:none}
+#rules ul{text-align:left;margin:15px 0}
+#rules li{margin-bottom:8px}
+
+/* GAME */
+#game{display:none}
+#status{margin:10px 0;font-weight:bold}
+
+/* LEVEL */
+select{
+  padding:8px 14px;
+  border-radius:20px;
+  border:none;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+/* SCOREBOARD */
+.scoreboard{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:15px 0;
+}
+.score{
+  padding:10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.25);
+  font-weight:800;
+}
+.score span{display:block;font-size:1.6rem}
+.x{color:#4cc9f0}
+.o{color:#f72585}
+.d{color:#ffd166}
+
+/* TIMER */
+.timer{
+  width:120px;height:120px;
+  margin:10px auto;
+  position:relative;
+}
+svg{transform:rotate(-90deg)}
+.bg{fill:none;stroke:rgba(255,255,255,.3);stroke-width:10}
+.progress{
+  fill:none;
+  stroke:#2ecc71;
+  stroke-width:10;
+  stroke-linecap:round;
+  stroke-dasharray:283;
+}
+.time{
+  position:absolute;inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+  font-weight:900;
+}
+
+/* BOARD */
+.board{
+  width:min(300px,90vw);
+  margin:20px auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+.cell{
+  aspect-ratio:1/1;
+  background:rgba(255,255,255,.35);
+  border-radius:16px;
+  font-size:3.4rem;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.cell.X{color:#4cc9f0}
+.cell.O{color:#f72585}
+
+/* BUTTON */
+button{
+  padding:12px 28px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(135deg,#4cc9f0,#4361ee);
+  color:white;
+  cursor:pointer;
+}
+
+/* POPUP */
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  visibility:hidden;
+}
+.popup.show{visibility:visible}
+.popupBox{
+  background:rgba(255,255,255,.25);
+  backdrop-filter:blur(15px);
+  padding:30px 40px;
+  border-radius:20px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div class="card" id="loading">
+  <h1>Tic Tac Toe</h1>
+  <div class="loading-bar"><span></span></div>
+</div>
+
+<!-- RULES -->
+<div class="card" id="rules">
+  <h1>Game Rules</h1>
+  <ul>
+    <li>Player X always starts first</li>
+    <li>Choose a difficulty level</li>
+    <li>Each level has different time limits</li>
+    <li>Failing to move in time skips your turn</li>
+    <li>3 in a row wins the game</li>
+    <li>Scoreboard tracks wins and draws</li>
+  </ul>
+  <button onclick="startGame()">Start Game</button>
+</div>
+
+<!-- GAME -->
+<div class="card" id="game">
+  <h1>Tic Tac Toe</h1>
+  <div id="status">Player X's Turn</div>
+
+  <!-- LEVEL -->
+  <select id="level">
+    <option value="10">Easy (10s)</option>
+    <option value="5">Medium (5s)</option>
+    <option value="3">Hard (3s)</option>
+  </select>
+
+  <!-- SCOREBOARD -->
+  <div class="scoreboard">
+    <div class="score x">X<span id="xScore">0</span></div>
+    <div class="score d">Draw<span id="dScore">0</span></div>
+    <div class="score o">O<span id="oScore">0</span></div>
+  </div>
+
+  <!-- TIMER -->
+  <div class="timer">
+    <svg width="120" height="120">
+      <circle class="bg" cx="60" cy="60" r="45"/>
+      <circle class="progress" cx="60" cy="60" r="45"/>
+    </svg>
+    <div class="time" id="time">10</div>
+  </div>
+
+  <!-- BOARD -->
+  <div class="board" id="board"></div>
+
+  <button onclick="resetGame()">Restart</button>
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+  <div class="popupBox">
+    <h2 id="popupText"></h2><br>
+    <button onclick="playAgain()">Play Again</button>
+  </div>
+</div>
+
+<script>
+const loading=document.getElementById("loading");
+const rules=document.getElementById("rules");
+const game=document.getElementById("game");
+const boardEl=document.getElementById("board");
+const statusEl=document.getElementById("status");
+const timeEl=document.getElementById("time");
+const progress=document.querySelector(".progress");
+const popup=document.getElementById("popup");
+const popupText=document.getElementById("popupText");
+const level=document.getElementById("level");
+
+const xScoreEl=document.getElementById("xScore");
+const oScoreEl=document.getElementById("oScore");
+const dScoreEl=document.getElementById("dScore");
+
+const FULL=283;
+let board,player,timer,timeLeft;
+let xScore=0,oScore=0,dScore=0;
+
+/* LOADING */
+setTimeout(()=>{
+  loading.style.display="none";
+  rules.style.display="block";
+},2600);
+
+function startGame(){
+  rules.style.display="none";
+  game.style.display="block";
+  init();
+}
+
+function init(){
+  board=Array(9).fill("");
+  player="X";
+  boardEl.innerHTML="";
+  for(let i=0;i<9;i++){
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.onclick=()=>move(i,cell);
+    boardEl.appendChild(cell);
+  }
+  statusEl.textContent=`Player ${player}'s Turn`;
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timeLeft=+level.value;
+  timeEl.textContent=timeLeft;
+  progress.style.strokeDashoffset=0;
+  timer=setInterval(()=>{
+    timeLeft--;
+    timeEl.textContent=timeLeft;
+    progress.style.strokeDashoffset=FULL-(timeLeft/level.value)*FULL;
+    if(timeLeft===0){
+      clearInterval(timer);
+      switchPlayer();
+    }
+  },1000);
+}
+
+function move(i,cell){
+  if(board[i])return;
+  board[i]=player;
+  cell.textContent=player;
+  cell.classList.add(player);
+  clearInterval(timer);
+  if(checkWin())return;
+  switchPlayer();
+}
+
+function switchPlayer(){
+  player=player==="X"?"O":"X";
+  statusEl.textContent=`Player ${player}'s Turn`;
+  startTimer();
+}
+
+function checkWin(){
+  const win=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const w of win){
+    if(board[w[0]]&&board[w[0]]===board[w[1]]&&board[w[0]]===board[w[2]]){
+      popupText.textContent=`Player ${player} Wins 🎉`;
+      popup.classList.add("show");
+      player==="X"?xScoreEl.textContent=++xScore:oScoreEl.textContent=++oScore;
+      return true;
+    }
+  }
+  if(!board.includes("")){
+    popupText.textContent="It's a Draw 😐";
+    popup.classList.add("show");
+    dScoreEl.textContent=++dScore;
+    return true;
+  }
+  return false;
+}
+
+function playAgain(){
+  popup.classList.remove("show");
+  init();
+}
+
+function resetGame(){
+  clearInterval(timer);
+  init();
+}
+</script>
+
+</body>
+</html>
